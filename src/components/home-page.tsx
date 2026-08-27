@@ -24,6 +24,7 @@ import {
   customizeResume,
   extractKeywords,
   fetchJobDescription,
+  generateCoverLetter,
   grammarCheck,
   lockLayout,
   rewriteResume,
@@ -98,15 +99,17 @@ export function HomePage() {
   const [keywords, setKeywords] = useState<KeywordSet | null>(null);
   const [audit, setAudit] = useState<AuditResult | null>(null);
   const [finalHtml, setFinalHtml] = useState<string | null>(null);
+  const [coverHtml, setCoverHtml] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [rewriting, setRewriting] = useState(false);
   const [customizing, setCustomizing] = useState(false);
+  const [generatingCover, setGeneratingCover] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [mode, setMode] = useState<"pipeline" | "search">("pipeline");
   const [theme, setTheme] = useState<Theme>("dark");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const busy = running || rewriting || customizing;
+  const busy = running || rewriting || customizing || generatingCover;
 
   useEffect(() => {
     setApiKey(readStoredApiKey());
@@ -157,7 +160,9 @@ export function HomePage() {
       ? "the pipeline"
       : rewriting
         ? "a rewrite"
-        : "a customize pass";
+        : customizing
+          ? "a customize pass"
+          : "cover letter generation";
     toast.message("Please wait", {
       description: `${task.charAt(0).toUpperCase()}${task.slice(1)} is still running. Finish it before starting a new task.`,
     });
@@ -179,6 +184,7 @@ export function HomePage() {
     setKeywords(null);
     setAudit(null);
     setFinalHtml(null);
+    setCoverHtml(null);
   }
 
   async function runPipeline(opts?: { url?: string; skipResetUrl?: boolean }) {
@@ -351,7 +357,7 @@ export function HomePage() {
       toastBusy();
       return;
     }
-    if (!finalHtml) {
+    if (!finalHtml && !coverHtml) {
       toast.error("Run the pipeline first so there is output to customize.");
       return;
     }
@@ -365,21 +371,77 @@ export function HomePage() {
       return;
     }
 
+    // Prefer active document: if cover exists and user likely on cover, still apply to finalHtml
+    // for resume path; cover customize uses coverHtml when present after gen.
+    const target = coverHtml && !finalHtml ? coverHtml : finalHtml;
+    if (!target) {
+      toast.error("No document to customize.");
+      return;
+    }
+
     setCustomizing(true);
     try {
       const result = await customizeResume({
-        data: { apiKey, resumeHtml: finalHtml, instructions: trimmed },
+        data: { apiKey, resumeHtml: target, instructions: trimmed },
       });
       if (!result.ok) {
         toast.error(result.error);
         return;
       }
-      setFinalHtml(result.html);
+      // If we customized while cover was the only doc, update cover; else update resume.
+      // Simpler rule: always update the document that was passed (target).
+      if (target === coverHtml) {
+        setCoverHtml(result.html);
+      } else {
+        setFinalHtml(result.html);
+      }
       toast.success("Customize complete. Output updated.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Customize failed.");
     } finally {
       setCustomizing(false);
+    }
+  }
+
+  async function onGenerateCover() {
+    if (busy) {
+      toastBusy();
+      return;
+    }
+    if (!finalHtml) {
+      toast.error("Finish the pipeline first.");
+      return;
+    }
+    if (!isPlausibleApiKey(apiKey)) {
+      toast.error("Save a Gemini API key first.");
+      return;
+    }
+    const job = jobText.trim();
+    if (job.length < 40) {
+      toast.error("Job description text is too short. Paste a fuller posting.");
+      return;
+    }
+
+    setGeneratingCover(true);
+    try {
+      const result = await generateCoverLetter({
+        data: {
+          apiKey,
+          jobText: job,
+          resumeHtml: finalHtml,
+          keywords: keywords ?? undefined,
+        },
+      });
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      setCoverHtml(result.html);
+      toast.success("Cover letter ready.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Cover letter generation failed.");
+    } finally {
+      setGeneratingCover(false);
     }
   }
 
@@ -612,14 +674,17 @@ export function HomePage() {
                       <p className="mb-3 font-display text-lg font-medium leading-snug tracking-tight">Output</p>
                       <OutputPanel
                         html={finalHtml}
+                        coverHtml={coverHtml}
                         keywords={keywords}
                         audit={audit}
                         pipelineComplete={Boolean(finalHtml)}
                         rewriting={rewriting}
                         customizing={customizing}
+                        generatingCover={generatingCover}
                         busy={busy}
                         onRewrite={() => void onRewriteOutput()}
                         onCustomize={(instructions) => void onCustomizeOutput(instructions)}
+                        onGenerateCover={() => void onGenerateCover()}
                       />
                     </div>
                   </CardContent>
