@@ -317,3 +317,41 @@ export const customizeResume = createServerFn({ method: "POST" })
     }
     return { ok: true as const, html };
   });
+
+/**
+ * Manual cover letter generation (not part of the pipeline).
+ * Requires completed pipeline resume + job description.
+ */
+export const generateCoverLetter = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      apiKey: apiKeySchema,
+      jobText: z.string().trim().min(40).max(MAX_JOB_CHARS),
+      resumeHtml: resumeSchema,
+      keywords: z
+        .object({
+          keywords: z.array(z.string()),
+          phrases: z.array(z.string()),
+          must_have: z.array(z.string()),
+          nice_to_have: z.array(z.string()),
+        })
+        .optional(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const mustHave = data.keywords?.must_have?.filter(Boolean).join(", ") ?? "";
+    const phrases = data.keywords?.phrases?.filter(Boolean).join(", ") ?? "";
+    const keywords = data.keywords?.keywords?.filter(Boolean).join(", ") ?? "";
+    const result = await chat({
+      apiKey: data.apiKey,
+      maxTokens: 4096,
+      temperature: 0.35,
+      user: `Write a professional cover letter as a complete, self-contained HTML document.\n\nRequirements:\n- Align tightly with the job description and the rewritten resume below.\n- Stay 100% truthful to the resume; do not invent employers, titles, metrics, or skills.\n- 3–4 short paragraphs plus a brief greeting and closing.\n- Natural, confident tone; weave in high-priority keywords where they fit without stuffing.\n- Return ONLY full HTML (include <!DOCTYPE html>, <html>, <head> with basic print-friendly styles, <body>). No markdown fences, no commentary.\n- Simple clean typography suitable for print (letter size, readable margins).\n\nMUST_HAVE (if any):\n${mustHave || "(none)"}\n\nPHRASES (if any):\n${phrases || "(none)"}\n\nKEYWORDS (if any):\n${keywords || "(none)"}\n\nJOB DESCRIPTION:\n${data.jobText}\n\nALIGNED RESUME HTML (source of truth for candidate facts):\n${data.resumeHtml}`,
+    });
+    if (!result.ok) return result;
+    const html = stripMarkdownFences(result.text);
+    if (html.length < 80) {
+      return { ok: false as const, error: "Cover letter generation returned almost no HTML." };
+    }
+    return { ok: true as const, html };
+  });
