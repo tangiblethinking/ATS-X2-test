@@ -26,7 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { AuditResult, KeywordSet } from "@/lib/pipeline-types";
 
-type DocKind = "resume" | "cover";
+export type DocKind = "resume" | "cover";
 
 type Props = {
   html: string | null;
@@ -39,7 +39,7 @@ type Props = {
   generatingCover?: boolean;
   busy?: boolean;
   onRewrite?: () => void;
-  onCustomize?: (instructions: string) => void;
+  onCustomize?: (instructions: string, kind: DocKind) => void;
   onGenerateCover?: () => void;
 };
 
@@ -161,11 +161,7 @@ export function OutputPanel({
     );
   }
 
-  const activeHtml = docTab === "cover" ? coverHtml : html;
-  const showPostActions = pipelineComplete && Boolean(activeHtml);
   const isCover = docTab === "cover";
-  const downloadName = isCover ? "cover-letter.html" : "resume-ats.html";
-  const docTitle = isCover ? "cover-letter" : "resume-ats";
 
   function submitCustomize() {
     const trimmed = instructions.trim();
@@ -174,7 +170,7 @@ export function OutputPanel({
       return;
     }
     setCustomizeOpen(false);
-    onCustomize?.(trimmed);
+    onCustomize?.(trimmed, docTab);
     setInstructions("");
   }
 
