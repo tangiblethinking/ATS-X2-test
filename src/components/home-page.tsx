@@ -3,7 +3,7 @@ import { FileCode2, Play, RotateCcw, Moon, Sun, X } from "lucide-react";
 import { toast } from "sonner";
 import { ApiKeyDialog } from "@/components/api-key-dialog";
 import { JobSearchPanel } from "@/components/job-search-panel";
-import { OutputPanel } from "@/components/output-panel";
+import { OutputPanel, type DocKind } from "@/components/output-panel";
 import { PipelineRail } from "@/components/pipeline-rail";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -352,13 +352,18 @@ export function HomePage() {
     }
   }
 
-  async function onCustomizeOutput(instructions: string) {
+  async function onCustomizeOutput(instructions: string, kind: DocKind) {
     if (busy) {
       toastBusy();
       return;
     }
-    if (!finalHtml && !coverHtml) {
-      toast.error("Run the pipeline first so there is output to customize.");
+    const target = kind === "cover" ? coverHtml : finalHtml;
+    if (!target) {
+      toast.error(
+        kind === "cover"
+          ? "Generate a cover letter first."
+          : "Run the pipeline first so there is output to customize.",
+      );
       return;
     }
     if (!isPlausibleApiKey(apiKey)) {
@@ -371,14 +376,6 @@ export function HomePage() {
       return;
     }
 
-    // Prefer active document: if cover exists and user likely on cover, still apply to finalHtml
-    // for resume path; cover customize uses coverHtml when present after gen.
-    const target = coverHtml && !finalHtml ? coverHtml : finalHtml;
-    if (!target) {
-      toast.error("No document to customize.");
-      return;
-    }
-
     setCustomizing(true);
     try {
       const result = await customizeResume({
@@ -388,9 +385,7 @@ export function HomePage() {
         toast.error(result.error);
         return;
       }
-      // If we customized while cover was the only doc, update cover; else update resume.
-      // Simpler rule: always update the document that was passed (target).
-      if (target === coverHtml) {
+      if (kind === "cover") {
         setCoverHtml(result.html);
       } else {
         setFinalHtml(result.html);
@@ -683,7 +678,7 @@ export function HomePage() {
                         generatingCover={generatingCover}
                         busy={busy}
                         onRewrite={() => void onRewriteOutput()}
-                        onCustomize={(instructions) => void onCustomizeOutput(instructions)}
+                        onCustomize={(instructions, kind) => void onCustomizeOutput(instructions, kind)}
                         onGenerateCover={() => void onGenerateCover()}
                       />
                     </div>
