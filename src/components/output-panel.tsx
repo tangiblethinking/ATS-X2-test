@@ -347,8 +347,8 @@ export function OutputPanel({
           <DialogHeader>
             <DialogTitle>Customize output</DialogTitle>
             <DialogDescription>
-              Describe the changes you want applied to the current resume HTML.
-              Only text content is edited; layout and structure stay locked.
+              Describe text and/or layout changes for the current resume HTML.
+              Structure, styles, and section order can be edited when you ask.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
@@ -358,7 +358,7 @@ export function OutputPanel({
               value={instructions}
               onChange={(e) => setInstructions(e.target.value.slice(0, 4000))}
               className="min-h-32"
-              placeholder="e.g. Shorten the summary to two sentences. Move Python earlier in the skills list. Soften the leadership language in the second role."
+              placeholder="e.g. Shorten the summary to two sentences. Move skills above experience. Use a two-column layout. Soften leadership language in the second role."
               disabled={busy}
             />
             <p className="text-xs text-muted-foreground">
