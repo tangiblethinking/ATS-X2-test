@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FileCode2, Play, RotateCcw, Moon, Sun } from "lucide-react";
+import { FileCode2, Play, RotateCcw, Moon, Sun, X } from "lucide-react";
 import { toast } from "sonner";
 import { ApiKeyDialog } from "@/components/api-key-dialog";
 import { JobSearchPanel } from "@/components/job-search-panel";
@@ -21,6 +21,7 @@ import { looksLikeHtml } from "@/lib/html-clean";
 import {
   auditKeywords,
   cleanHtml,
+  customizeResume,
   extractKeywords,
   fetchJobDescription,
   grammarCheck,
@@ -98,10 +99,14 @@ export function HomePage() {
   const [audit, setAudit] = useState<AuditResult | null>(null);
   const [finalHtml, setFinalHtml] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
+  const [rewriting, setRewriting] = useState(false);
+  const [customizing, setCustomizing] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [mode, setMode] = useState<"pipeline" | "search">("pipeline");
   const [theme, setTheme] = useState<Theme>("dark");
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const busy = running || rewriting || customizing;
 
   useEffect(() => {
     setApiKey(readStoredApiKey());
@@ -133,9 +138,9 @@ export function HomePage() {
       isPlausibleApiKey(apiKey) &&
       jobUrl.trim().length > 7 &&
       resumeHtml.trim().length > 40 &&
-      !running
+      !busy
     );
-  }, [apiKey, jobUrl, resumeHtml, running]);
+  }, [apiKey, jobUrl, resumeHtml, busy]);
 
   function mark(id: StepId, status: StepStatus, detail?: string) {
     setStatuses((prev) => ({ ...prev, [id]: status }));
@@ -145,6 +150,17 @@ export function HomePage() {
   function fail(id: StepId, message: string) {
     mark(id, "error", message);
     toast.error(message);
+  }
+
+  function toastBusy() {
+    const task = running
+      ? "the pipeline"
+      : rewriting
+        ? "a rewrite"
+        : "a customize pass";
+    toast.message("Please wait", {
+      description: `${task.charAt(0).toUpperCase()}${task.slice(1)} is still running. Finish it before starting a new task.`,
+    });
   }
 
   async function onPickFile(file: File | undefined) {
@@ -166,6 +182,10 @@ export function HomePage() {
   }
 
   async function runPipeline(opts?: { url?: string; skipResetUrl?: boolean }) {
+    if (busy) {
+      toastBusy();
+      return;
+    }
     const urlToUse = (opts?.url ?? jobUrl).trim();
     if (!isPlausibleApiKey(apiKey)) {
       toast.error("Save a Gemini API key first.");
@@ -267,7 +287,107 @@ export function HomePage() {
     }
   }
 
+  async function onRewriteOutput() {
+    if (busy) {
+      toastBusy();
+      return;
+    }
+    if (!finalHtml) {
+      toast.error("Run the pipeline first so there is output to rewrite.");
+      return;
+    }
+    if (!isPlausibleApiKey(apiKey)) {
+      toast.error("Save a Gemini API key first.");
+      return;
+    }
+
+    setRewriting(true);
+    try {
+      let kw = keywords;
+      if (
+        !kw ||
+        (kw.keywords.length === 0 &&
+          kw.phrases.length === 0 &&
+          kw.must_have.length === 0 &&
+          kw.nice_to_have.length === 0)
+      ) {
+        const job = jobText.trim();
+        if (job.length < 40) {
+          toast.error(
+            "Keywords are missing and the job description text is too short to re-extract. Paste a fuller job description, then try again.",
+          );
+          return;
+        }
+        toast.message("Recovering keywords…", {
+          description: "Keywords were missing; extracting them from the job description.",
+        });
+        const extracted = await extractKeywords({ data: { apiKey, jobText: job } });
+        if (!extracted.ok) {
+          toast.error(extracted.error);
+          return;
+        }
+        kw = extracted.keywords;
+        setKeywords(kw);
+      }
+
+      const rewritten = await rewriteResume({
+        data: { apiKey, resumeHtml: finalHtml, keywords: kw },
+      });
+      if (!rewritten.ok) {
+        toast.error(rewritten.error);
+        return;
+      }
+      setFinalHtml(rewritten.html);
+      toast.success("Rewrite complete. Output updated.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Rewrite failed.");
+    } finally {
+      setRewriting(false);
+    }
+  }
+
+  async function onCustomizeOutput(instructions: string) {
+    if (busy) {
+      toastBusy();
+      return;
+    }
+    if (!finalHtml) {
+      toast.error("Run the pipeline first so there is output to customize.");
+      return;
+    }
+    if (!isPlausibleApiKey(apiKey)) {
+      toast.error("Save a Gemini API key first.");
+      return;
+    }
+    const trimmed = instructions.trim();
+    if (trimmed.length < 3) {
+      toast.error("Enter edit instructions.");
+      return;
+    }
+
+    setCustomizing(true);
+    try {
+      const result = await customizeResume({
+        data: { apiKey, resumeHtml: finalHtml, instructions: trimmed },
+      });
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      setFinalHtml(result.html);
+      toast.success("Customize complete. Output updated.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Customize failed.");
+    } finally {
+      setCustomizing(false);
+    }
+  }
+
   function sendToInputs(job: JobResult) {
+    if (busy) {
+      toastBusy();
+      return;
+    }
     resetPipeline();
     setJobText("");
     setJobUrl(job.applicationUrl);
@@ -357,33 +477,122 @@ export function HomePage() {
                   <CardContent className="flex flex-col gap-5">
                     <div className="flex flex-col gap-2">
                       <Label htmlFor="job-url">Job description URL</Label>
-                      <Input id="job-url" type="url" inputMode="url" placeholder="https://…" value={jobUrl} onChange={(e) => setJobUrl(e.target.value)} disabled={running} />
+                      <div className="relative">
+                        <Input
+                          id="job-url"
+                          type="url"
+                          inputMode="url"
+                          placeholder="https://…"
+                          value={jobUrl}
+                          onChange={(e) => setJobUrl(e.target.value)}
+                          disabled={busy}
+                          className={jobUrl ? "pr-10" : undefined}
+                        />
+                        {jobUrl ? (
+                          <button
+                            type="button"
+                            className="absolute right-2 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                            aria-label="Clear job URL"
+                            disabled={busy}
+                            onClick={() => setJobUrl("")}
+                          >
+                            <X className="size-3.5" />
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
                     <div className="flex flex-col gap-2">
                       <Label htmlFor="job-text">
                         Job description text
                         <span className="ml-2 font-normal text-muted-foreground">used if the URL is blocked</span>
                       </Label>
-                      <Textarea id="job-text" value={jobText} onChange={(e) => setJobText(e.target.value.slice(0, MAX_JOB_CHARS))} disabled={running} className="min-h-28" placeholder="Optional. Paste the posting if the page cannot be fetched." />
+                      <div className="relative">
+                        <Textarea
+                          id="job-text"
+                          value={jobText}
+                          onChange={(e) => setJobText(e.target.value.slice(0, MAX_JOB_CHARS))}
+                          disabled={busy}
+                          className={`min-h-28 ${jobText ? "pr-10" : ""}`}
+                          placeholder="Optional. Paste the posting if the page cannot be fetched."
+                        />
+                        {jobText ? (
+                          <button
+                            type="button"
+                            className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                            aria-label="Clear job description text"
+                            disabled={busy}
+                            onClick={() => setJobText("")}
+                          >
+                            <X className="size-3.5" />
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center justify-between gap-2">
                         <Label htmlFor="resume-html">Resume HTML</Label>
-                        <Button type="button" variant="ghost" size="sm" className="h-9" disabled={running} onClick={() => fileRef.current?.click()}>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-9"
+                          disabled={busy}
+                          onClick={() => fileRef.current?.click()}
+                        >
                           <FileCode2 className="size-3.5" /> Load .html
                         </Button>
-                        <input ref={fileRef} type="file" accept=".html,.htm,text/html" className="hidden" onChange={(e) => { void onPickFile(e.target.files?.[0]); e.target.value = ""; }} />
+                        <input
+                          ref={fileRef}
+                          type="file"
+                          accept=".html,.htm,text/html"
+                          className="hidden"
+                          onChange={(e) => {
+                            void onPickFile(e.target.files?.[0]);
+                            e.target.value = "";
+                          }}
+                        />
                       </div>
-                      <Textarea id="resume-html" value={resumeHtml} onChange={(e) => setResumeHtml(e.target.value.slice(0, MAX_RESUME_CHARS))} disabled={running} className="min-h-48 font-mono text-xs leading-relaxed" placeholder="Paste the full HTML of your resume, including style tags." />
+                      <div className="relative">
+                        <Textarea
+                          id="resume-html"
+                          value={resumeHtml}
+                          onChange={(e) => setResumeHtml(e.target.value.slice(0, MAX_RESUME_CHARS))}
+                          disabled={busy}
+                          className={`min-h-48 font-mono text-xs leading-relaxed ${resumeHtml ? "pr-10" : ""}`}
+                          placeholder="Paste the full HTML of your resume, including style tags."
+                        />
+                        {resumeHtml ? (
+                          <button
+                            type="button"
+                            className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                            aria-label="Clear resume HTML"
+                            disabled={busy}
+                            onClick={() => setResumeHtml("")}
+                          >
+                            <X className="size-3.5" />
+                          </button>
+                        ) : null}
+                      </div>
                       <p className="text-xs text-muted-foreground">
                         {resumeHtml.length.toLocaleString()} / {MAX_RESUME_CHARS.toLocaleString()} characters
                       </p>
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row">
-                      <Button type="button" className="h-12 flex-1" disabled={!canRun} onClick={() => void runPipeline()}>
+                      <Button
+                        type="button"
+                        className="h-12 flex-1"
+                        disabled={!canRun}
+                        onClick={() => void runPipeline()}
+                      >
                         <Play className="size-4" /> {running ? "Running…" : "Run pipeline"}
                       </Button>
-                      <Button type="button" variant="outline" className="h-12" disabled={running} onClick={resetPipeline}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-12"
+                        disabled={busy}
+                        onClick={resetPipeline}
+                      >
                         <RotateCcw className="size-4" /> Clear output
                       </Button>
                     </div>
@@ -401,7 +610,17 @@ export function HomePage() {
                     <div className="h-px bg-border" />
                     <div>
                       <p className="mb-3 font-display text-lg font-medium leading-snug tracking-tight">Output</p>
-                      <OutputPanel html={finalHtml} keywords={keywords} audit={audit} />
+                      <OutputPanel
+                        html={finalHtml}
+                        keywords={keywords}
+                        audit={audit}
+                        pipelineComplete={Boolean(finalHtml)}
+                        rewriting={rewriting}
+                        customizing={customizing}
+                        busy={busy}
+                        onRewrite={() => void onRewriteOutput()}
+                        onCustomize={(instructions) => void onCustomizeOutput(instructions)}
+                      />
                     </div>
                   </CardContent>
                 </Card>
@@ -413,7 +632,7 @@ export function HomePage() {
               setResumeHtml={setResumeHtml}
               apiKey={apiKey}
               searchApiKey={searchApiKey}
-              running={running}
+              running={busy}
               onSendToInputs={sendToInputs}
               onPickFile={onPickFile}
             />
