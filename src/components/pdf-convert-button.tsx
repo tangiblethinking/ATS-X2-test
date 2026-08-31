@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { isPlausibleApiKey } from "@/lib/api-key-store";
-import { convertPdfToHtml } from "@/lib/convert-pdf.server";
+import { convertPdfToHtml } from "@/lib/convert-pdf";
 
 type Props = {
   apiKey: string;
