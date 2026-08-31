@@ -188,6 +188,108 @@ export async function geminiChat(opts: {
   return { ok: false, error: lastError, status: lastStatus };
 }
 
+/**
+ * Multimodal chat: text + optional PDF (base64) for document understanding.
+ */
+export async function geminiChatWithPdf(opts: {
+  apiKey: string;
+  system: string;
+  userText: string;
+  pdfBase64: string;
+  maxTokens: number;
+  temperature: number;
+}): Promise<ChatResult> {
+  const payload: Record<string, unknown> = {
+    systemInstruction: {
+      parts: [{ text: opts.system }],
+    },
+    contents: [
+      {
+        role: "user",
+        parts: [
+          {
+            inline_data: {
+              mime_type: "application/pdf",
+              data: opts.pdfBase64,
+            },
+          },
+          { text: opts.userText },
+        ],
+      },
+    ],
+    generationConfig: {
+      maxOutputTokens: opts.maxTokens,
+      temperature: opts.temperature,
+    },
+  };
+
+  const headers = {
+    "Content-Type": "application/json",
+    "x-goog-api-key": opts.apiKey,
+  };
+
+  let lastError = "Could not reach the model service.";
+  let lastStatus: number | undefined;
+
+  for (const model of FREE_TIER_MODELS) {
+    const url = `${GEMINI_BASE}/models/${model}:generateContent`;
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      lastError = "Could not reach the model service.";
+      continue;
+    }
+
+    if (!res.ok && res.status >= 500) {
+      try {
+        res = await fetch(url, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(payload),
+        });
+      } catch {
+        lastError = "Could not reach the model service.";
+        continue;
+      }
+    }
+
+    if (res.ok) {
+      try {
+        const text = await parseGenerateBody(res);
+        return { ok: true, text };
+      } catch (err) {
+        return {
+          ok: false,
+          error:
+            err instanceof Error
+              ? err.message
+              : "The model response could not be read.",
+        };
+      }
+    }
+
+    lastStatus = res.status;
+    lastError = statusError(res.status);
+
+    if (res.status === 401 || res.status === 403) {
+      return { ok: false, error: lastError, status: res.status };
+    }
+
+    if (res.status === 404 || res.status === 400 || res.status === 429) {
+      continue;
+    }
+
+    return { ok: false, error: lastError, status: res.status };
+  }
+
+  return { ok: false, error: lastError, status: lastStatus };
+}
+
 export async function verifyGeminiKey(apiKey: string): Promise<ChatResult> {
   // List models is the lightest way to validate a Google AI Studio key
   const url = `${GEMINI_BASE}/models?pageSize=5`;
