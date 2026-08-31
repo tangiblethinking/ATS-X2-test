@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resume</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,700&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #2563c7;
+      --orange: #c78925;
+      --dark: #111111;
+      --mid: #444444;
+      --light: #666666;
+      --rule: #dddddd;
+      --green: #00A000;
+      --bg-tint: #f7f8fa;
+    }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 10.5pt;
+      color: var(--dark);
+      background: #e8e8e8;
+      display: flex;
+      justify-content: center;
+      padding: 32px 16px;
+      min-height: 100vh;
+    }
+    .page {
+      background: #fff;
+      width: 680px;
+      max-width: 100%;
+      box-shadow: 0 4px 40px rgba(0,0,0,0.15);
+    }
+    header {
+      padding: 28px 36px 20px;
+      border-bottom: 2px solid var(--rule);
+    }
+    header h1 {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 28pt;
+      font-weight: 400;
+      color: var(--dark);
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+    }
+    .title-line {
+      font-size: 10pt;
+      font-weight: 700;
+      color: var(--blue);
+      margin: 5px 0 10px;
+    }
+    .contact {
+      font-size: 9pt;
+      color: var(--mid);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px 10px;
+    }
+    .contact .phone { color: #212121; font-weight: 700; }
+    .contact .sep   { color: var(--rule); }
+    .contact a      { color: var(--blue); text-decoration: none; font-weight: 600; }
+    .contact a:hover { text-decoration: underline; }
+    .section {
+      padding: 22px 36px;
+      border-bottom: 1px solid var(--rule);
+    }
+    .section:last-child { border-bottom: none; }
+    .section-title {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 14pt;
+      font-weight: 400;
+      color: var(--dark);
+      border-bottom: 1.5px solid var(--dark);
+      padding-bottom: 4px;
+      margin-bottom: 14px;
+    }
+    .summary-quote {
+      font-size: 9.5pt;
+      font-style: italic;
+      font-weight: 700;
+      color: #212121;
+      line-height: 1.65;
+      margin-bottom: 10px;
+    }
+    .summary-bullets { list-style: disc; padding-left: 17px; }
+    .summary-bullets li {
+      font-size: 9pt;
+      color: var(--mid);
+      line-height: 1.55;
+      margin-bottom: 3px;
+    }
+    .summary-bullets li strong { color: var(--dark); }
+    .job { margin-bottom: 20px; }
+    .job:last-child { margin-bottom: 0; }
+    .job-title {
+      font-size: 10.5pt;
+      font-weight: 700;
+      color: var(--orange);
+    }
+    .job-company {
+      display: block;
+      font-size: 10pt;
+      font-weight: 500;
+      color: var(--blue);
+      text-decoration: none;
+    }
+    .job-company:hover { text-decoration: underline; }
+    .job-meta {
+      font-size: 8.5pt;
+      color: var(--light);
+      margin: 3px 0 7px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .job ul { list-style: disc; padding-left: 17px; }
+    .job ul li {
+      font-size: 9.5pt;
+      color: var(--mid);
+      line-height: 1.5;
+      margin-bottom: 3px;
+    }
+    .job ul li strong { color: var(--dark); }
+    .dot-list { list-style: disc; padding-left: 17px; }
+    .dot-list li {
+      font-size: 9.5pt;
+      color: var(--mid);
+      line-height: 1.65;
+    }
+    .dot-list li strong { color: var(--dark); }
+    .tag-list { display: flex; flex-wrap: wrap; gap: 5px; }
+    .tag {
+      font-size: 8pt;
+      font-weight: 500;
+      color: var(--blue);
+      background: rgba(37,99,199,0.09);
+      border-radius: 3px;
+      padding: 3px 8px;
+    }
+    .edu-degree { font-size: 10pt; font-weight: 700; color: var(--dark); }
+    .edu-school  { font-size: 9.5pt; font-weight: 500; color: var(--blue); margin-top: 2px; }
+    .edu-meta {
+      font-size: 8.5pt;
+      color: var(--light);
+      margin-top: 5px;
+    }
+    @media print {
+      body { background: white; padding: 0; }
+      .page { box-shadow: none; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1><!-- CANDIDATE FULL NAME --></h1>
+    <div class="title-line"><!-- Role | specialties --></div>
+    <div class="contact">
+      <span class="phone"><!-- phone --></span>
+      <span class="sep">|</span>
+      <a href="mailto:"><!-- email --></a>
+      <span class="sep">|</span>
+      <a href="#" target="_blank">LinkedIn</a>
+      <span class="sep">|</span>
+      <a href="#" target="_blank">Portfolio</a>
+    </div>
+  </header>
+  <div class="section">
+    <h2 class="section-title">Summary</h2>
+    <p class="summary-quote"><!-- summary quote --></p>
+    <ul class="summary-bullets">
+      <li><strong><!-- point --></strong></li>
+    </ul>
+  </div>
+  <div class="section">
+    <h2 class="section-title">Experience</h2>
+    <div class="job">
+      <div class="job-title"><!-- title --></div>
+      <a class="job-company" href="#" target="_blank"><!-- company --></a>
+      <div class="job-meta"><!-- dates · location --></div>
+      <ul>
+        <li><strong><!-- achievement --></strong> details</li>
+      </ul>
+    </div>
+  </div>
+  <div class="section">
+    <h2 class="section-title">Key Achievements</h2>
+    <ul class="dot-list">
+      <li><strong><!-- metric --></strong> details</li>
+    </ul>
+  </div>
+  <div class="section">
+    <h2 class="section-title">Skills</h2>
+    <div class="tag-list">
+      <span class="tag"><!-- skill --></span>
+    </div>
+  </div>
+  <div class="section">
+    <h2 class="section-title">Education & Certifications</h2>
+    <div class="edu-degree"><!-- degree --></div>
+    <div class="edu-school"><!-- school --></div>
+    <div class="edu-meta"><!-- dates --></div>
+  </div>
+</div>
+</body>
+</html>
