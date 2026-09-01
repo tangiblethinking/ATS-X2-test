@@ -117,6 +117,15 @@
       flex-wrap: wrap;
       gap: 4px;
     }
+    .job-meta svg {
+      width: 13px;
+      height: 13px;
+      fill: var(--green);
+      flex-shrink: 0;
+      position: relative;
+      top: -1px;
+    }
+    .meta-dot { color: var(--rule); margin: 0 2px; }
     .job ul { list-style: disc; padding-left: 17px; }
     .job ul li {
       font-size: 9.5pt;
@@ -141,12 +150,35 @@
       border-radius: 3px;
       padding: 3px 8px;
     }
+    .tag.ai-tag { background: rgba(37,99,199,0.15); }
     .edu-degree { font-size: 10pt; font-weight: 700; color: var(--dark); }
     .edu-school  { font-size: 9.5pt; font-weight: 500; color: var(--blue); margin-top: 2px; }
     .edu-meta {
       font-size: 8.5pt;
       color: var(--light);
       margin-top: 5px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .edu-meta svg {
+      width: 13px;
+      height: 13px;
+      fill: var(--green);
+      flex-shrink: 0;
+      position: relative;
+      top: -1px;
+    }
+    @media (max-width: 580px) {
+      body { padding: 0; background: #fff; }
+      .page { box-shadow: none; }
+      header { padding: 20px 18px 16px; }
+      header h1 { font-size: 22pt; }
+      .title-line { font-size: 9pt; }
+      .section { padding: 18px 18px; }
+      .section-title { font-size: 13pt; }
+      .job ul li, .summary-bullets li, .dot-list li { font-size: 9pt; }
     }
     @media print {
       body { background: white; padding: 0; }
@@ -181,7 +213,13 @@
     <div class="job">
       <div class="job-title"><!-- title --></div>
       <a class="job-company" href="#" target="_blank"><!-- company --></a>
-      <div class="job-meta"><!-- dates · location --></div>
+      <div class="job-meta">
+        <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5C3.9 4 3 4.9 3 6v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
+        <!-- dates -->
+        <span class="meta-dot">·</span>
+        <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+        <!-- location -->
+      </div>
       <ul>
         <li><strong><!-- achievement --></strong> details</li>
       </ul>
@@ -200,10 +238,16 @@
     </div>
   </div>
   <div class="section">
-    <h2 class="section-title">Education & Certifications</h2>
+    <h2 class="section-title">Education &amp; Certifications</h2>
     <div class="edu-degree"><!-- degree --></div>
     <div class="edu-school"><!-- school --></div>
-    <div class="edu-meta"><!-- dates --></div>
+    <div class="edu-meta">
+      <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5C3.9 4 3 4.9 3 6v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
+      <!-- dates -->
+    </div>
+    <div style="margin-top:12px; font-size:9pt; color:var(--mid); line-height:1.6;">
+      <strong style="color:var(--dark);">Additional:</strong> <!-- certifications -->
+    </div>
   </div>
 </div>
 </body>
