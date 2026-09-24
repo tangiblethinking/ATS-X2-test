@@ -5,6 +5,11 @@ import type { Job } from "@/lib/jobs";
 type Props = {
   running: boolean;
   onSendToInputs: (job: { title: string; applicationUrl: string }) => void;
+  resumeHtml?: string;
+  setResumeHtml?: (v: string) => void;
+  apiKey?: string;
+  searchApiKey?: string;
+  onPickFile?: (file: File | undefined) => void;
 };
 
 export function JobSearchPanel({ running, onSendToInputs }: Props) {
