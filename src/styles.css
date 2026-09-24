@@ -84,7 +84,6 @@
     color: var(--color-foreground);
   }
 
-  /* Light mode overrides (class on <html>) */
   html.light {
     --color-background: #f7f4ee;
     --color-foreground: #1c1b18;
@@ -137,12 +136,8 @@
 }
 
 @keyframes shimmer {
-  0% {
-    background-position: 100% 0;
-  }
-  100% {
-    background-position: -100% 0;
-  }
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
 }
 
 .stagger-in {
@@ -160,4 +155,17 @@
   background-clip: text;
   color: transparent;
   animation: shimmer 1.6s linear infinite;
+}
+
+@keyframes boardline-scan {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(360%); }
+}
+.boardline-scan { animation: boardline-scan 1.15s ease-in-out infinite; }
+@keyframes bl-pulse { 50% { opacity: 0.45; } }
+.bl-bar { transition: width 250ms cubic-bezier(0.22, 1, 0.36, 1); }
+.bl-skel { animation: bl-pulse 1.4s linear infinite; background: var(--color-border); }
+@media (prefers-reduced-motion: reduce) {
+  .boardline-scan { animation: none; width: 100%; transform: none; }
+  .bl-bar, .bl-skel { animation: none; transition: none; }
 }
