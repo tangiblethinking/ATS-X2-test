@@ -4,7 +4,7 @@ export function significantWords(query: string): string[] {
   const words = query
     .toLowerCase()
     .split(/\s+/)
-    .map((word) => word.replace(/^[\u0000-\uFFFF]*$/, word.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "")))
+    .map((word) => word.replace(/^[^^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ""))
     .filter(Boolean);
   const meaningful = words.filter((word) => !STOP.has(word));
   return meaningful.length > 0 ? meaningful : words;
