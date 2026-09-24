@@ -140,7 +140,7 @@ export function HomePage() {
   return (
     <TooltipProvider delayDuration={200}>
       <div className="min-h-dvh bg-background text-foreground">
-        <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-filter supports-[backdrop-filter]:bg-background/80">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
             <div className="flex min-w-0 items-center gap-4">
               <div className="flex min-w-0 items-baseline gap-3">
@@ -293,6 +293,10 @@ export function HomePage() {
                         onRewrite={() => void actions.onRewriteOutput()}
                         onCustomize={(instructions, kind) => void actions.onCustomizeOutput(instructions, kind)}
                         onGenerateCover={() => void actions.onGenerateCover()}
+                        onHtmlChange={(kind, next) => {
+                          if (kind === "cover") setCoverHtml(next);
+                          else setFinalHtml(next);
+                        }}
                       />
                     </div>
                   </CardContent>
