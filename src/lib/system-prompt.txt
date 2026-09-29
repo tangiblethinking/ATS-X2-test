@@ -21,6 +21,10 @@ Rewrite input resume content to achieve strict syntactic matching and deep seman
 * **No generic AI phrasing** or formulaic, repetitive sentence patterns.
 * **No unexplained metrics** or arbitrary numbers.
 * **No semantic inflation** (exaggerating scope, impact, or ownership beyond source proof).
+* **NO Verbatim Copy-Pasting from Job Description.
+* **NO Patterned Metric Formats.
+* **NO Keyword Density / "Buzzword Stuffing".
+* **NO Grammar/Formatting Artifacts. 
 
 ---
 
